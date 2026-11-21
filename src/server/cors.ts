@@ -1,6 +1,6 @@
 import type { RequestInfo } from "rwsdk/worker";
 
-import { config } from "@/env";
+import { config } from "@/lib/env";
 
 /**
  * CORS и проверка Origin для приложения, которое проксируется с разных доменов.
@@ -28,7 +28,6 @@ export function cors({ request, response }: RequestInfo): Response | void {
       request.headers.get("access-control-request-headers") ?? "content-type",
     );
     headers.set("Access-Control-Max-Age", "600");
-    headers.set("Vary", "Origin");
   }
 
   if (request.method === "OPTIONS") {
@@ -37,9 +36,28 @@ export function cors({ request, response }: RequestInfo): Response | void {
 
   for (const [name, value] of headers) response.headers.set(name, value);
 
+  // Vary не перезаписываем: у ответа он может быть выставлен и другими слоями.
+  if (cross && allowed(origin)) {
+    const vary = new Set(
+      (response.headers.get("Vary") ?? "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    );
+    vary.add("Origin");
+    response.headers.set("Vary", [...vary].join(", "));
+  }
+
   const mutating = request.method !== "GET" && request.method !== "HEAD";
   const ownCheck = config.securityMode === "strict";
-  if (ownCheck && mutating && (!origin || !allowed(origin))) {
+
+  // Запросы действий уже проверил rwsdk по Origin; свой слой закрывает только
+  // то, что через обработчик действий не проходит (нативный POST, маршруты).
+  const isAction =
+    new URL(request.url).searchParams.has("__rsc_action_id") ||
+    request.headers.get("x-tsr-serverfn") === "true";
+
+  if (ownCheck && mutating && !isAction && (!origin || !allowed(origin))) {
     return new Response("Origin not allowed", { status: 403 });
   }
 }

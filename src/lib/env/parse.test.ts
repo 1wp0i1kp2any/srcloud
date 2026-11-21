@@ -39,7 +39,7 @@ describe("flag and choice", () => {
 describe("parseEnv", () => {
   it("defaults to framework mode and production cookies", () => {
     expect(parseEnv({}, { prod: true })).toEqual({
-      appOrigins: [],
+      appOrigins: ["https://preview.opencode.pzlb.ru"],
       securityMode: "strict",
       cookies: { secure: true, prefix: "__Host-" },
     });

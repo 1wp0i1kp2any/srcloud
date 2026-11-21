@@ -74,12 +74,21 @@ export interface AppConfig {
   cookies: { secure: boolean; prefix: string };
 }
 
+/**
+ * Адреса, которые разрешены всегда: превью песочницы проксирует приложение
+ * с публичного домена, и без записи здесь любое действие получало бы 403.
+ * Домены из APP_ORIGINS добавляются к этому списку.
+ */
+const BUILT_IN_ORIGINS: readonly string[] = ["https://preview.opencode.pzlb.ru"];
+
 export function parseEnv(
   raw: EnvInput,
   defaults: { prod: boolean },
 ): AppConfig {
   return {
-    appOrigins: originList("APP_ORIGINS", raw.APP_ORIGINS),
+    appOrigins: [
+      ...new Set([...BUILT_IN_ORIGINS, ...originList("APP_ORIGINS", raw.APP_ORIGINS)]),
+    ],
     securityMode: choice("SECURITY_MODE", raw.SECURITY_MODE, [
       "framework",
       "strict",
