@@ -42,7 +42,8 @@ export function SignupCard({
     () =>
       new CheckRegistry().register("email-taken", async (value, ctx) => {
         if (ctx.signal.aborted) return null;
-        if (typeof value !== "string" || !value.includes("@")) return null;
+        if (typeof value !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))
+          return null;
         return (await isEmailTaken(value)) ? issue("email.taken") : null;
       }),
     [],

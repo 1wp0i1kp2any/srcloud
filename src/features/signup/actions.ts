@@ -8,17 +8,26 @@ import { defineAction } from "@/features/shared/define-action";
 
 import { signup } from "./contract";
 
-/** Демонстрационный список занятых адресов: в проде — запрос к БД. */
-const TAKEN = new Set(["taken@example.com", "admin@example.com"]);
+/**
+ * Единственное место, где решается «почта занята». Сейчас — демонстрационный
+ * набор; при подключении БД меняется только тело:
+ *   const row = await db.users.findByEmail(email)
+ *   return row !== null
+ * Остальное (serverQuery, дебаунс, перепроверка на сервере) не трогается.
+ */
+async function lookupEmailTaken(email: string): Promise<boolean> {
+  // TODO(db): заменить на запрос к БД — это единственная точка.
+  const TAKEN = new Set(["taken@example.com", "admin@example.com"]);
+  return TAKEN.has(email.trim().toLowerCase());
+}
 
 /** `serverQuery` не перерисовывает страницу — важно для дебаунс-проверки. */
-export const isEmailTaken = serverQuery(async (email: string) => {
-  return TAKEN.has(email.trim().toLowerCase());
-});
+export const isEmailTaken = serverQuery(lookupEmailTaken);
 
 const checks = new CheckRegistry().register("email-taken", async (value) => {
-  if (typeof value !== "string" || !value.includes("@")) return null;
-  return (await isEmailTaken(value)) ? issue("email.taken") : null;
+  if (typeof value !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))
+    return null;
+  return (await lookupEmailTaken(value)) ? issue("email.taken") : null;
 });
 
 const blockedDomain = (): FormError => ({
