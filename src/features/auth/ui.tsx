@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useState } from "react";
 import type { Result } from "@/lib/form";
 import { createConfig, useForm } from "@/lib/form/react";
 
+import { useSurfaceContinuation } from "@/components/surface";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,10 +53,12 @@ export function AuthCard({
     [uid],
   );
 
+  const resolvedContinuation = useSurfaceContinuation(continuation);
+
   const form = useForm(config, auth, {
     instance,
     intercept: true,
-    continuation,
+    continuation: resolvedContinuation,
     transport: async ({ data }) => ({
       kind: "result",
       result: await signIn(data),
@@ -68,8 +71,8 @@ export function AuthCard({
 
   // Результат нативной отправки приезжает пропом: поднимаем один раз.
   useEffect(() => {
-    form.lift(continuation);
-  }, [continuation]);
+    form.lift(resolvedContinuation);
+  }, [resolvedContinuation]);
 
   return (
     <FormShell

@@ -1,9 +1,11 @@
 "use client";
 
-import { useId, useMemo } from "react";
+import { useEffect, useId, useMemo } from "react";
 
-import { CheckRegistry, issue } from "@/lib/form";
+import { CheckRegistry, issue, type Result } from "@/lib/form";
 import { createConfig, useForm } from "@/lib/form/react";
+
+import { useSurfaceContinuation } from "@/components/surface";
 
 import {
   FormFields,
@@ -22,8 +24,10 @@ import { signup } from "./contract";
  * межполевое правило, условное поле — всё из описания формы.
  */
 export function SignupCard({
+  continuation = null,
   onSuccess,
 }: {
+  continuation?: Result | null;
   onSuccess?: FormSuccessAction;
 }) {
   const uid = useId().replace(/:/g, "");
@@ -49,9 +53,12 @@ export function SignupCard({
     [],
   );
 
+  const resolvedContinuation = useSurfaceContinuation(continuation);
+
   const form = useForm(config, signup, {
     instance: "signup:new",
     intercept: true,
+    continuation: resolvedContinuation,
     checks,
     transport: async ({ data }) => ({
       kind: "result",
@@ -60,6 +67,10 @@ export function SignupCard({
   });
 
   useFormSuccess(form, onSuccess);
+
+  useEffect(() => {
+    form.lift(resolvedContinuation);
+  }, [resolvedContinuation]);
 
   const texts = {
     success: "Готово: сервер принял заявку.",
