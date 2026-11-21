@@ -22,6 +22,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { AuthCard } from "@/app/components/auth-card";
+
 export function BasecnDemo() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -62,6 +64,7 @@ export function BasecnDemo() {
                     Это basecn Dialog на Base UI, без Radix.
                   </DialogDescription>
                 </DialogHeader>
+                <AuthCard />
                 <DialogFooter>
                   <Button onClick={() => setOpen(false)}>Закрыть</Button>
                 </DialogFooter>
