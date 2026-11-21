@@ -4,6 +4,7 @@ import type { Result } from "@/lib/form";
 
 import { AuthCard } from "@/app/components/auth-card";
 import { BasecnDemo } from "@/app/components/basecn-demo";
+import { SignupCard } from "@/app/components/signup-card";
 
 export const Home = () => {
   // Результат серверного экшена кладёт SDK до рендера; для нативной
@@ -15,6 +16,7 @@ export const Home = () => {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-10 p-8">
       <AuthCard continuation={continuation} />
+      <SignupCard />
       <BasecnDemo />
     </main>
   );
