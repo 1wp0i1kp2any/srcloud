@@ -21,6 +21,7 @@ const isServerFile = (rel) =>
 const isClientFile = (rel) =>
   rel.startsWith("src/components/") ||
   /^src\/features\/[^/]+\/(ui\.tsx|index\.ts)$/.test(rel) ||
+  /^src\/lib\/(?:.*\/)?use-[^/]+\.ts$/.test(rel) ||
   rel.startsWith("src/app/");
 
 for (const rel of walk(path.join(root, "src"))) {
