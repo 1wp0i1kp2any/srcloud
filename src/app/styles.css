@@ -3,6 +3,13 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
+
+/* Правило «узкий экран» для JS: useIsMobile читает этот токен и отдаёт его
+   в matchMedia. Порог только здесь — дублировать его в TypeScript не нужно. */
+:root {
+  --mobile: (max-width: 1023px);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
