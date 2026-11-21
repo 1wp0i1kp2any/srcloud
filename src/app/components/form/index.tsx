@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
 
+import { navigate } from "rwsdk/client";
+
 import { visibleFields, type Result } from "@/lib/form";
 import type { BoundForm, FieldView } from "@/lib/form/react";
 
@@ -36,6 +38,11 @@ import { Textarea } from "@/components/ui/textarea";
 
 type Attrs = Record<string, unknown>;
 
+/** Что делать после подтверждённой отправки: решает место подключения. */
+export type FormSuccessAction =
+  | ((result: Result) => void)
+  | { redirect: string };
+
 export interface FormTexts {
   /** Подпись пустого селекта. */
   selectPlaceholder?: string;
@@ -53,18 +60,19 @@ export interface FormTexts {
  */
 export function useFormSuccess(
   form: BoundForm,
-  onSuccess?: (result: Result) => void,
+  action?: FormSuccessAction,
 ) {
   const seen = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!onSuccess) return;
+    if (!action) return;
     const result = form.state.result;
     if (!result?.ok) return;
     if (seen.current === result.submissionId) return;
     seen.current = result.submissionId;
-    onSuccess(result);
-  }, [onSuccess, form.state.result?.ok, form.state.result?.submissionId]);
+    if (typeof action === "function") action(result);
+    else void navigate(action.redirect);
+  }, [action, form.state.result?.ok, form.state.result?.submissionId]);
 }
 
 export function FormShell({

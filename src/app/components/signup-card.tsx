@@ -7,13 +7,13 @@ import { createConfig, useForm } from "@/lib/form/react";
 import { signup } from "@/forms/signup";
 
 import { isEmailTaken, signUp } from "@/app/actions/signup";
-import { type Result } from "@/lib/form";
 import {
   FormFields,
   FormShell,
   FormSummary,
   SubmitButton,
   useFormSuccess,
+  type FormSuccessAction,
 } from "@/app/components/form";
 
 /**
@@ -24,7 +24,7 @@ import {
 export function SignupCard({
   onSuccess,
 }: {
-  onSuccess?: (result: Result) => void;
+  onSuccess?: FormSuccessAction;
 }) {
   const uid = useId().replace(/:/g, "");
 

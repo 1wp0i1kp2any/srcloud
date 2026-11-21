@@ -13,6 +13,7 @@ import {
   FormSummary,
   SubmitButton,
   useFormSuccess,
+  type FormSuccessAction,
 } from "@/app/components/form";
 
 /**
@@ -32,7 +33,7 @@ export function AuthCard({
    */
   instance?: string;
   /** Что делать после подтверждённого входа: решает место подключения. */
-  onSuccess?: (result: Result) => void;
+  onSuccess?: FormSuccessAction;
 }) {
   // Два экземпляра на одной странице не должны делить DOM-id и aria-связи.
   const uid = useId().replace(/:/g, "");
