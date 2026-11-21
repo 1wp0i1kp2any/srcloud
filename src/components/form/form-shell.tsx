@@ -25,8 +25,13 @@ export function FormShell({
     formData: FormData,
   ) => Promise<void>;
 
+  // React сам задаёт method/encType для формы с функцией-действием; если
+  // передать их из formProps, он предупреждает и всё равно переопределяет.
+  const { action: _action, method: _method, encType: _encType, ...rest } =
+    form.formProps();
+
   return (
-    <form {...form.formProps()} action={submitAction} className={className}>
+    <form {...rest} action={submitAction} className={className}>
       {form.hidden().map((hidden) => (
         <input key={hidden.name} {...hidden} />
       ))}
