@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
+import type { ComponentProps } from "react";
 
-import { navigate } from "rwsdk/client";
-
-import { visibleFields, type Result } from "@/lib/form";
 import type { BoundForm, FieldView } from "@/lib/form/react";
 
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
@@ -28,136 +24,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-/**
- * Общий рендерер форм: один раз на проект. Компонент не знает, какая форма
- * перед ним, — он разворачивает наборы пропсов, которые посчитало ядро.
- *
- * Тексты сюда не вшиты: универсальный компонент не решает, что читает
- * пользователь. Всё, что видно, приходит через `texts` от фичи.
- */
+import type { FormTexts } from "./types";
 
 type Attrs = Record<string, unknown>;
-
-/** Что делать после подтверждённой отправки: решает место подключения. */
-export type FormSuccessAction =
-  | ((result: Result) => void)
-  | { redirect: string };
-
-export interface FormTexts {
-  /** Подпись пустого селекта. */
-  selectPlaceholder?: string;
-  /** Индикатор идущей асинхронной проверки. */
-  checking?: ReactNode;
-  /** Сообщение об успешной отправке. */
-  success?: ReactNode;
-  /** Подпись кнопки во время отправки. */
-  pending?: ReactNode;
-}
-
-/**
- * Успех обрабатывает место подключения: модалка закрывается, маршрут
- * переходит. Рендерер только сообщает, что сервер подтвердил отправку.
- */
-export function useFormSuccess(
-  form: BoundForm,
-  action?: FormSuccessAction,
-) {
-  const seen = useRef<string | undefined>(undefined);
-
-  useEffect(() => {
-    if (!action) return;
-    const result = form.state.result;
-    if (!result?.ok) return;
-    if (seen.current === result.submissionId) return;
-    seen.current = result.submissionId;
-    if (typeof action === "function") action(result);
-    else void navigate(action.redirect);
-  }, [action, form.state.result?.ok, form.state.result?.submissionId]);
-}
-
-export function FormShell({
-  form,
-  action,
-  children,
-  className,
-}: {
-  form: BoundForm;
-  action: (formData: FormData) => Promise<unknown>;
-  children: ReactNode;
-  className?: string;
-}) {
-  // React типизирует action как void, но SDK кладёт возврат в
-  // `requestInfo.rw.actionResult` — оттуда страница берёт continuation.
-  const submitAction = action as unknown as (
-    formData: FormData,
-  ) => Promise<void>;
-
-  return (
-    <form {...form.formProps()} action={submitAction} className={className}>
-      {form.hidden().map((hidden) => (
-        <input key={hidden.name} {...hidden} />
-      ))}
-      {children}
-    </form>
-  );
-}
-
-export function FormSummary({
-  form,
-  texts,
-}: {
-  form: BoundForm;
-  texts?: FormTexts;
-}) {
-  return (
-    <>
-      {form.common.length > 0 && (
-        <div
-          className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
-          role="alert"
-        >
-          {form.common.map((error) => (
-            <p key={error.id}>{error.message}</p>
-          ))}
-        </div>
-      )}
-      {form.state.status === "success" && texts?.success && (
-        <p className="text-sm text-emerald-600" role="status">
-          {texts.success}
-        </p>
-      )}
-    </>
-  );
-}
-
-/**
- * Видимые поля в порядке описания. Условие видимости — данные описания,
- * поэтому фильтр живёт в рендерере, а не в каждой форме.
- */
-export function FormFields({
-  form,
-  texts,
-}: {
-  form: BoundForm;
-  texts?: FormTexts;
-}) {
-  const visible = visibleFields(form.description, form.values);
-
-  return (
-    <>
-      {form.description.fields
-        .filter((descriptor) => visible.has(descriptor.name))
-        .map((descriptor) => (
-          <FormField
-            form={form}
-            key={descriptor.name}
-            name={descriptor.name}
-            texts={texts}
-          />
-        ))}
-    </>
-  );
-}
 
 /** Текст ошибки: async-проверки приходят с кодом, если словарь не сработал. */
 function messageOf(form: BoundForm, error: { code: string; message?: string }) {
@@ -174,7 +43,10 @@ function fieldAria(attrs: Attrs) {
   };
 }
 
-/** Одно поле: вид элемента выбирается по `kind`, а не по имени формы. */
+/**
+ * Одно поле: вид элемента выбирается по `kind`, а не по имени формы.
+ * Все ветви — на примитивах basecn.
+ */
 export function FormField({
   form,
   name,
@@ -248,11 +120,7 @@ export function FormField({
             onValueChange={(value) => change(value)}
             value={String(field.value ?? attrs.value ?? "")}
           >
-            <SelectTrigger
-              {...aria}
-              className="w-full"
-              id={attrs.id as string}
-            >
+            <SelectTrigger {...aria} className="w-full" id={attrs.id as string}>
               <SelectValue placeholder={texts?.selectPlaceholder} />
             </SelectTrigger>
             <SelectPositioner>
@@ -358,27 +226,5 @@ export function FormField({
         />
       )}
     </Field>
-  );
-}
-
-export function SubmitButton({
-  form,
-  label,
-  texts,
-  className,
-}: {
-  form: BoundForm;
-  label: string;
-  texts?: FormTexts;
-  className?: string;
-}) {
-  return (
-    <Button
-      {...form.intent("submit")}
-      className={className}
-      render={<button type="submit" />}
-    >
-      {form.state.pending ? (texts?.pending ?? label) : label}
-    </Button>
   );
 }
