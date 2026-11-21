@@ -11,3 +11,9 @@ import { parseEnv } from "./parse";
 export const config = parseEnv(env as unknown as Record<string, string | undefined>, {
   prod: import.meta.env.PROD,
 });
+
+// Одна строка при старте изолята: видно, какая политика и список origin реально применились.
+console.log(
+  "[env] security",
+  JSON.stringify({ mode: config.securityMode, origins: config.appOrigins }),
+);

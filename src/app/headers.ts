@@ -11,6 +11,10 @@ export const setCommonHeaders =
       );
     }
 
+    // Документ не кэшируется: хеши ассетов меняются при каждой сборке, и старый
+    // HTML с прежними именами оставляет страницу без гидрации (формы не работают).
+    response.headers.set("Cache-Control", "no-store");
+
     // Forces browser to use the declared content-type instead of trying to guess/sniff it
     response.headers.set("X-Content-Type-Options", "nosniff");
 

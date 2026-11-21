@@ -58,6 +58,20 @@ export function cors({ request, response }: RequestInfo): Response | void {
     request.headers.get("x-tsr-serverfn") === "true";
 
   if (ownCheck && mutating && !isAction && (!origin || !allowed(origin))) {
-    return new Response("Origin not allowed", { status: 403 });
+    // Диагностика: без этих полей невозможно понять, почему запрос отклонён.
+    console.warn(
+      "[cors] reject",
+      JSON.stringify({
+        method: request.method,
+        origin,
+        self,
+        isAction,
+        allowed: config.appOrigins,
+        path: new URL(request.url).pathname,
+      }),
+    );
+    return new Response("Origin not allowed: " + (origin ?? "missing"), {
+      status: 403,
+    });
   }
 }
