@@ -8,6 +8,8 @@ import { parseEnv } from "./parse";
  * Значения приходят из `.env` (локально RWSDK линкует его в `.dev.vars`)
  * и из `vars`/секретов воркера в проде.
  */
+export { PREVIEW_ORIGIN } from "./parse";
+
 export const config = parseEnv(env as unknown as Record<string, string | undefined>, {
   prod: import.meta.env.PROD,
 });

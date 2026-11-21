@@ -62,6 +62,7 @@ export function choice<T extends string>(
 export interface EnvInput {
   APP_ORIGINS?: string;
   SECURITY_MODE?: string;
+  ALLOW_NULL_ORIGIN?: string;
   COOKIE_SECURE?: string;
   COOKIE_PREFIX?: string;
 }
@@ -71,6 +72,8 @@ export interface AppConfig {
   appOrigins: readonly string[];
   /** `framework` — CSRF закрыт rwsdk; `strict` — плюс своя проверка; `off` — только для локальных проб. */
   securityMode: "framework" | "strict" | "off";
+  /** Разрешать `Origin: null` (sandbox-iframe без allow-same-origin). */
+  allowNullOrigin: boolean;
   cookies: { secure: boolean; prefix: string };
 }
 
@@ -79,7 +82,9 @@ export interface AppConfig {
  * с публичного домена, и без записи здесь любое действие получало бы 403.
  * Домены из APP_ORIGINS добавляются к этому списку.
  */
-const BUILT_IN_ORIGINS: readonly string[] = ["https://preview.opencode.pzlb.ru"];
+export const PREVIEW_ORIGIN = "https://preview.opencode.pzlb.ru";
+
+const BUILT_IN_ORIGINS: readonly string[] = [PREVIEW_ORIGIN];
 
 export function parseEnv(
   raw: EnvInput,
@@ -94,6 +99,7 @@ export function parseEnv(
       "strict",
       "off",
     ], "strict"),
+    allowNullOrigin: flag("ALLOW_NULL_ORIGIN", raw.ALLOW_NULL_ORIGIN, false),
     cookies: {
       secure: flag("COOKIE_SECURE", raw.COOKIE_SECURE, defaults.prod),
       prefix: raw.COOKIE_PREFIX ?? (defaults.prod ? "__Host-" : ""),

@@ -74,6 +74,7 @@ export function AuthCard({
   return (
     <FormShell
       action={signIn}
+      actionName="auth.signIn"
       className="mx-auto flex w-full max-w-sm flex-col gap-4"
       form={form}
     >

@@ -9,12 +9,14 @@ import { AppLayout } from "@/app/layouts/app-layout";
 import { Home } from "@/app/pages/home";
 import { Welcome } from "@/app/pages/welcome";
 import { cors } from "@/server/cors";
+import { formAction } from "@/server/form-action";
 
 export type AppContext = {};
 
 export default defineApp(
   [
     cors,
+    formAction,
     setCommonHeaders(),
     ({ ctx }) => {
       // setup ctx here

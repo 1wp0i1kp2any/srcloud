@@ -71,6 +71,7 @@ export function SignupCard({
   return (
     <FormShell
       action={signUp}
+      actionName="signup.submit"
       className="mx-auto flex w-full max-w-sm flex-col gap-4"
       form={form}
     >

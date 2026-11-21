@@ -41,6 +41,7 @@ describe("parseEnv", () => {
     expect(parseEnv({}, { prod: true })).toEqual({
       appOrigins: ["https://preview.opencode.pzlb.ru"],
       securityMode: "strict",
+      allowNullOrigin: false,
       cookies: { secure: true, prefix: "__Host-" },
     });
   });

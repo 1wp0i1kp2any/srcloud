@@ -11,11 +11,14 @@ import type { BoundForm } from "@/lib/form/react";
 export function FormShell({
   form,
   action,
+  actionName,
   children,
   className,
 }: {
   form: BoundForm;
   action: (formData: FormData) => Promise<unknown>;
+  /** Имя действия для нативного POST: связывает форму с серверным реестром. */
+  actionName: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -35,6 +38,7 @@ export function FormShell({
       {form.hidden().map((hidden) => (
         <input key={hidden.name} {...hidden} />
       ))}
+      <input name="__form_action" type="hidden" value={actionName} />
       {children}
     </form>
   );

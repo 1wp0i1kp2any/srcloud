@@ -1,6 +1,6 @@
 import type { RequestInfo } from "rwsdk/worker";
 
-import { config } from "@/lib/env";
+import { config, PREVIEW_ORIGIN } from "@/lib/env";
 
 /**
  * CORS и проверка Origin для приложения, которое проксируется с разных доменов.
@@ -14,8 +14,14 @@ export function cors({ request, response }: RequestInfo): Response | void {
 
   const self = new URL(request.url).origin;
   const origin = request.headers.get("origin");
+  // `Origin: null` приходит из opaque origin (sandbox-iframe, replay в песочнице).
+  // Разрешаем его только по явному флагу или на хосте превью: там формы должны
+  // работать без JS, а настоящих данных и сессий нет.
+  const nullAllowed = config.allowNullOrigin || self === PREVIEW_ORIGIN;
   const allowed = (value: string) =>
-    value === self || config.appOrigins.includes(value);
+    (value === "null" && nullAllowed) ||
+    value === self ||
+    config.appOrigins.includes(value);
   const cross = origin !== null && origin !== self;
 
   const headers = new Headers();
@@ -66,6 +72,7 @@ export function cors({ request, response }: RequestInfo): Response | void {
         origin,
         self,
         isAction,
+        nullAllowed,
         allowed: config.appOrigins,
         path: new URL(request.url).pathname,
       }),
