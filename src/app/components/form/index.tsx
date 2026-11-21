@@ -14,6 +14,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -27,10 +29,23 @@ import { Textarea } from "@/components/ui/textarea";
 /**
  * Общий рендерер форм: один раз на проект. Компонент не знает, какая форма
  * перед ним, — он разворачивает наборы пропсов, которые посчитало ядро.
- * Поэтому новая форма — это описание и композиция, а не новая разметка.
+ *
+ * Тексты сюда не вшиты: универсальный компонент не решает, что читает
+ * пользователь. Всё, что видно, приходит через `texts` от фичи.
  */
 
 type Attrs = Record<string, unknown>;
+
+export interface FormTexts {
+  /** Подпись пустого селекта. */
+  selectPlaceholder?: string;
+  /** Индикатор идущей асинхронной проверки. */
+  checking?: ReactNode;
+  /** Сообщение об успешной отправке. */
+  success?: ReactNode;
+  /** Подпись кнопки во время отправки. */
+  pending?: ReactNode;
+}
 
 export function FormShell({
   form,
@@ -61,10 +76,10 @@ export function FormShell({
 
 export function FormSummary({
   form,
-  successText = "Готово: сервер подтвердил отправку.",
+  texts,
 }: {
   form: BoundForm;
-  successText?: string;
+  texts?: FormTexts;
 }) {
   return (
     <>
@@ -78,9 +93,9 @@ export function FormSummary({
           ))}
         </div>
       )}
-      {form.state.status === "success" && (
+      {form.state.status === "success" && texts?.success && (
         <p className="text-sm text-emerald-600" role="status">
-          {successText}
+          {texts.success}
         </p>
       )}
     </>
@@ -91,7 +106,13 @@ export function FormSummary({
  * Видимые поля в порядке описания. Условие видимости — данные описания,
  * поэтому фильтр живёт в рендерере, а не в каждой форме.
  */
-export function FormFields({ form }: { form: BoundForm }) {
+export function FormFields({
+  form,
+  texts,
+}: {
+  form: BoundForm;
+  texts?: FormTexts;
+}) {
   const visible = visibleFields(form.description, form.values);
 
   return (
@@ -103,98 +124,203 @@ export function FormFields({ form }: { form: BoundForm }) {
             form={form}
             key={descriptor.name}
             name={descriptor.name}
+            texts={texts}
           />
         ))}
     </>
   );
 }
 
-/** Текст ошибки: async-проверки приходят с кодом вместо текста. */
+/** Текст ошибки: async-проверки приходят с кодом, если словарь не сработал. */
 function messageOf(form: BoundForm, error: { code: string; message?: string }) {
   if (error.message && error.message !== error.code) return error.message;
   return form.description.messages[error.code] ?? error.code;
 }
 
-/** Одно поле: вид элемента выбирается по `input`, а не по имени формы. */
-export function FormField({ form, name }: { form: BoundForm; name: string }) {
+/** Общие ARIA-связи поля, которые обязаны доехать до любого примитива. */
+function fieldAria(attrs: Attrs) {
+  return {
+    "aria-invalid": attrs["aria-invalid"] as boolean | undefined,
+    "aria-describedby": attrs["aria-describedby"] as string | undefined,
+    "aria-errormessage": attrs["aria-errormessage"] as string | undefined,
+  };
+}
+
+/** Одно поле: вид элемента выбирается по `kind`, а не по имени формы. */
+export function FormField({
+  form,
+  name,
+  texts,
+}: {
+  form: BoundForm;
+  name: string;
+  texts?: FormTexts;
+}) {
   const field: FieldView = form.f[name];
   const attrs = field.attrs as Attrs;
+  const aria = fieldAria(attrs);
   const change = (value: unknown) => field.onInput(value);
-  const invalid = attrs["aria-invalid"] === true;
-  const describedBy = attrs["aria-describedby"] as string | undefined;
+
+  const options = field.options ?? [];
+
+  const control = (() => {
+    switch (field.kind) {
+      case "checkbox":
+        return (
+          <label className="flex items-center gap-2">
+            <Checkbox
+              {...aria}
+              checked={Boolean(field.value)}
+              id={attrs.id as string}
+              name={attrs.name as string}
+              onBlur={() => field.setTouched()}
+              onCheckedChange={(checked) => change(checked)}
+            />
+            <span className="text-sm font-medium">{field.label}</span>
+          </label>
+        );
+
+      case "multiselect": {
+        const selected = new Set(
+          Array.isArray(field.value) ? (field.value as string[]) : [],
+        );
+        return (
+          <div className="flex flex-col gap-2" role="group">
+            {options.map((option) => {
+              const checked = selected.has(option.value);
+              return (
+                <label className="flex items-center gap-2" key={option.value}>
+                  <Checkbox
+                    checked={checked}
+                    disabled={option.disabled}
+                    name={attrs.name as string}
+                    onBlur={() => field.setTouched()}
+                    onCheckedChange={(next) => {
+                      const updated = new Set(selected);
+                      if (next) updated.add(option.value);
+                      else updated.delete(option.value);
+                      change([...updated]);
+                    }}
+                    value={option.value}
+                  />
+                  <span className="text-sm">{option.label}</span>
+                </label>
+              );
+            })}
+          </div>
+        );
+      }
+
+      case "select":
+        return (
+          <Select
+            disabled={Boolean(attrs.disabled)}
+            items={options}
+            name={attrs.name as string}
+            onValueChange={(value) => change(value)}
+            value={String(field.value ?? attrs.value ?? "")}
+          >
+            <SelectTrigger
+              {...aria}
+              className="w-full"
+              id={attrs.id as string}
+            >
+              <SelectValue placeholder={texts?.selectPlaceholder} />
+            </SelectTrigger>
+            <SelectPositioner>
+              <SelectContent>
+                {options.map((option) => (
+                  <SelectItem
+                    disabled={option.disabled}
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </SelectPositioner>
+          </Select>
+        );
+
+      case "radio":
+        return (
+          <RadioGroup
+            {...aria}
+            name={attrs.name as string}
+            onValueChange={(value) => change(value)}
+            value={String(field.value ?? attrs.value ?? "")}
+          >
+            {options.map((option) => {
+              const id = `${attrs.id as string}-${option.value}`;
+              return (
+                <div className="flex items-center gap-2" key={option.value}>
+                  <RadioGroupItem
+                    disabled={option.disabled}
+                    id={id}
+                    value={option.value}
+                  />
+                  <Label htmlFor={id}>{option.label}</Label>
+                </div>
+              );
+            })}
+          </RadioGroup>
+        );
+
+      case "file":
+      case "files": {
+        const { value: _value, checked: _checked, ...fileAttrs } = attrs;
+        return (
+          <Input
+            {...(fileAttrs as ComponentProps<typeof Input>)}
+            onChange={(event) => {
+              const files = event.currentTarget.files;
+              change(
+                field.kind === "files"
+                  ? Array.from(files ?? [])
+                  : (files?.[0] ?? null),
+              );
+            }}
+            type="file"
+          />
+        );
+      }
+
+      case "textarea":
+        return (
+          <Textarea
+            {...(attrs as ComponentProps<typeof Textarea>)}
+            onBlur={() => field.setTouched()}
+            onChange={(event) => change(event.currentTarget.value)}
+          />
+        );
+
+      default:
+        return (
+          <Input
+            {...(attrs as ComponentProps<typeof Input>)}
+            aria-busy={field.checking || undefined}
+            onBlur={() => field.setTouched()}
+            onChange={(event) => change(event.currentTarget.value)}
+          />
+        );
+    }
+  })();
 
   return (
-    <Field data-invalid={invalid || undefined}>
-      {field.input === "checkbox" ? (
-        <div className="flex items-center gap-2">
-          <Checkbox
-            aria-describedby={describedBy}
-            aria-invalid={invalid || undefined}
-            checked={Boolean(field.value)}
-            id={attrs.id as string}
-            name={attrs.name as string}
-            onBlur={() => field.setTouched()}
-            onCheckedChange={(checked) => change(checked)}
-          />
-          <FieldLabel htmlFor={attrs.id as string}>{field.label}</FieldLabel>
-        </div>
-      ) : (
-        <>
-          <FieldLabel {...field.labelProps()}>{field.label}</FieldLabel>
-
-          {field.input === "select" ? (
-            <Select
-              disabled={Boolean(attrs.disabled)}
-              items={field.options}
-              name={attrs.name as string}
-              onValueChange={(value) => change(value)}
-              value={String(field.value ?? attrs.value ?? "")}
-            >
-              <SelectTrigger
-                aria-describedby={describedBy}
-                aria-invalid={invalid || undefined}
-                className="w-full"
-                id={attrs.id as string}
-              >
-                <SelectValue placeholder={field.placeholder ?? "Выберите…"} />
-              </SelectTrigger>
-              <SelectPositioner>
-                <SelectContent>
-                  {field.options?.map((option) => (
-                    <SelectItem
-                      disabled={option.disabled}
-                      key={option.value}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </SelectPositioner>
-            </Select>
-          ) : field.input === "textarea" ? (
-            <Textarea
-              {...(attrs as ComponentProps<typeof Textarea>)}
-              onBlur={() => field.setTouched()}
-              onChange={(event) => change(event.currentTarget.value)}
-            />
-          ) : (
-            <Input
-              {...(attrs as ComponentProps<typeof Input>)}
-              aria-busy={field.checking || undefined}
-              onBlur={() => field.setTouched()}
-              onChange={(event) => change(event.currentTarget.value)}
-            />
-          )}
-        </>
+    <Field data-invalid={aria["aria-invalid"] || undefined}>
+      {field.kind !== "checkbox" && (
+        <FieldLabel {...field.labelProps()}>{field.label}</FieldLabel>
       )}
-
+      {control}
       {field.help && (
         <FieldDescription {...field.helpProps()}>
           {field.help}
         </FieldDescription>
       )}
-      {field.checking && <FieldDescription>Проверяем…</FieldDescription>}
+      {field.checking && texts?.checking && (
+        <FieldDescription>{texts.checking}</FieldDescription>
+      )}
       {field.errors.length > 0 && (
         <FieldError
           {...field.errorProps()}
@@ -210,10 +336,12 @@ export function FormField({ form, name }: { form: BoundForm; name: string }) {
 export function SubmitButton({
   form,
   label,
+  texts,
   className,
 }: {
   form: BoundForm;
   label: string;
+  texts?: FormTexts;
   className?: string;
 }) {
   return (
@@ -222,7 +350,7 @@ export function SubmitButton({
       className={className}
       render={<button type="submit" />}
     >
-      {form.state.pending ? "Отправляем…" : label}
+      {form.state.pending ? (texts?.pending ?? label) : label}
     </Button>
   );
 }

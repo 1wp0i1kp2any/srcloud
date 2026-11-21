@@ -46,6 +46,11 @@ export function AuthCard({
     }),
   });
 
+  const texts = {
+    success: "Готово: сервер подтвердил вход.",
+    pending: "Входим…",
+  };
+
   // Результат нативной отправки приезжает пропом: поднимаем один раз.
   useEffect(() => {
     form.lift(continuation);
@@ -64,11 +69,11 @@ export function AuthCard({
         </p>
       </div>
 
-      <FormSummary form={form} successText="Готово: сервер подтвердил вход." />
+      <FormSummary form={form} texts={texts} />
 
-      <FormFields form={form} />
+      <FormFields form={form} texts={texts} />
 
-      <SubmitButton className="w-full" form={form} label="Войти" />
+      <SubmitButton className="w-full" form={form} label="Войти" texts={texts} />
     </FormShell>
   );
 }

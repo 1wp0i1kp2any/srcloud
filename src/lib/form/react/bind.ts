@@ -20,7 +20,7 @@ import type { FieldDescriptor, FormDescription, InvalidFrom } from '../describe'
 import { applyHandler, hasError, invalidFromFor, split, type ErrorContext, type ErrorHandler } from '../errors'
 import { buildEnvelope } from '../envelope'
 import { makeRenderer, ru } from '../messages'
-import type { FormError, Result } from '../result'
+import { normalizeErrors, type FormError, type Result } from '../result'
 import { FormStore, initialState } from '../state'
 import { evaluate, runSubmit, SubmitMachine, type ParallelPolicy, type Transport } from '../submit'
 import type { HtmlAttrs, RowKey } from '../types'
@@ -165,12 +165,16 @@ export function useForm(cfg: BoundConfig, initial: FormDescription, o: UseFormOp
   }, [desc, display])
 
   const applyResult = useCallback((result: Result) => {
+    // Результат применён — тем же номером отправки его повторно не поднимаем.
+    holder.lifted = result
     store.set((s) => reduceResult(s, result))
   }, [reduceResult, store])
 
   /** Продолжение — адресованное сообщение: чужое не применяется. */
   const lift = useCallback((result: Result | null | undefined) => {
-    if (!result || result === holder.lifted) return
+    if (!result) return
+    // Один и тот же результат приходит транспортом и пропом: сверяем номер.
+    if (holder.lifted && result.submissionId === holder.lifted.submissionId) return
     if (result.formId !== desc.id || result.instance !== instance) return
     holder.lifted = result
     holder.sid = result.submissionId
@@ -201,7 +205,11 @@ export function useForm(cfg: BoundConfig, initial: FormDescription, o: UseFormOp
         // Синхронные ошибки того же поля (email/minLength/…) сохраняются.
         const previous = asyncErrorIds.get(name)
         const facts = s.facts.filter((e) => e.id !== previous && e.id !== error?.id)
-        if (error) { facts.push(error); asyncErrorIds.set(name, error.id) }
+        if (error) {
+          const [shownError] = normalizeErrors([error], render, desc.policy.limits)
+          const next = shownError ?? error
+          facts.push(next); asyncErrorIds.set(name, next.id)
+        }
         else asyncErrorIds.delete(name)
         const ctx: ErrorContext = { from: 'fetch', intent: 'submit', outcome: 'not-applied' }
         return { ...s, checking, facts, shown: display(facts, ctx).errors }

@@ -53,6 +53,13 @@ export function SignupCard() {
     }),
   });
 
+  const texts = {
+    success: "Готово: сервер принял заявку.",
+    pending: "Отправляем…",
+    checking: "Проверяем…",
+    selectPlaceholder: "Выберите тип",
+  };
+
   return (
     <FormShell
       action={signUp}
@@ -66,11 +73,11 @@ export function SignupCard() {
         </p>
       </div>
 
-      <FormSummary form={form} successText="Готово: сервер принял заявку." />
+      <FormSummary form={form} texts={texts} />
 
-      <FormFields form={form} />
+      <FormFields form={form} texts={texts} />
 
-      <SubmitButton className="w-full" form={form} label="Создать аккаунт" />
+      <SubmitButton className="w-full" form={form} label="Создать аккаунт" texts={texts} />
     </FormShell>
   );
 }

@@ -10,6 +10,8 @@ import {
 } from "@/lib/form";
 import { auth } from "@/forms/auth";
 
+import { plain } from "./plain";
+
 /** Тот же instance, что у `useForm` на клиенте: иначе continuation не поднимется. */
 const INSTANCE = "auth:new";
 
@@ -20,24 +22,6 @@ const render = makeRenderer(
 
 const DEMO_EMAIL = "user@example.com";
 const DEMO_PASSWORD = "secret123";
-
-/**
- * React Flight принимает только plain-объекты: `decode` библиотеки отдаёт
- * значения с null-прототипом, и такой `Result` падает при передаче в
- * клиентский компонент. Приводим данные к обычным объектам, не трогая
- * `File`/`Blob`/`Date` — их Flight умеет.
- */
-function plain(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(plain);
-  if (value instanceof Date || (typeof Blob !== "undefined" && value instanceof Blob))
-    return value;
-  if (value !== null && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value)) out[key] = plain(item);
-    return out;
-  }
-  return value;
-}
 
 /**
  * Единственная точка входа формы входа.

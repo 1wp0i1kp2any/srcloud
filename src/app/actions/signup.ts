@@ -12,16 +12,24 @@ import {
   type FormError,
   type Result,
 } from "@/lib/form";
+import { serverQuery } from "rwsdk/worker";
+
 import { signup } from "@/forms/signup";
+
+import { plain } from "./plain";
 
 const INSTANCE = "signup:new";
 
 /** Демонстрационный список занятых адресов: в реальном приложении — запрос к БД. */
 const TAKEN = new Set(["taken@example.com", "admin@example.com"]);
 
-export async function isEmailTaken(email: string): Promise<boolean> {
+/**
+ * `serverQuery` вместо обычного действия: ответ не перерисовывает страницу.
+ * Server action на каждый дебаунс гонял бы весь RSC-рендер ради boolean.
+ */
+export const isEmailTaken = serverQuery(async (email: string) => {
   return TAKEN.has(email.trim().toLowerCase());
-}
+});
 
 const checks = new CheckRegistry().register("email-taken", async (value) => {
   if (typeof value !== "string" || !value.includes("@")) return null;
@@ -32,18 +40,6 @@ const render = makeRenderer(
   [signup.messages as never, ru],
   signup.policy.interpolate,
 );
-
-function plain(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(plain);
-  if (value instanceof Date || (typeof Blob !== "undefined" && value instanceof Blob))
-    return value;
-  if (value !== null && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value)) out[key] = plain(item);
-    return out;
-  }
-  return value;
-}
 
 /**
  * Серверная половина регистрации: та же описательная проверка, что и в
