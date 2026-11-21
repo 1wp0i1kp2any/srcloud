@@ -4,9 +4,7 @@ import { useId, useMemo } from "react";
 
 import { CheckRegistry, issue } from "@/lib/form";
 import { createConfig, useForm } from "@/lib/form/react";
-import { signup } from "@/forms/signup";
 
-import { isEmailTaken, signUp } from "@/app/actions/signup";
 import {
   FormFields,
   FormShell,
@@ -14,12 +12,14 @@ import {
   SubmitButton,
   useFormSuccess,
   type FormSuccessAction,
-} from "@/app/components/form";
+} from "@/components/form";
+
+import { isEmailTaken, signUp } from "./actions";
+import { signup } from "./contract";
 
 /**
- * Демонстрация того, чего в React «из коробки» нет: живая проверка по
- * политике, асинхронная занятость почты с дебаунсом, межполевое правило,
- * условное поле и генерация атрибутов — всё из описания формы.
+ * Регистрация: живая проверка по политике, асинхронная занятость почты,
+ * межполевое правило, условное поле — всё из описания формы.
  */
 export function SignupCard({
   onSuccess,
@@ -37,8 +37,7 @@ export function SignupCard({
     [uid],
   );
 
-  // Ту же проверку сервер выполняет сам: браузерная версия — только
-  // оптимизация, чтобы не ждать отправки.
+  // Ту же проверку сервер выполняет сам: браузерная версия — оптимизация.
   const checks = useMemo(
     () =>
       new CheckRegistry().register("email-taken", async (value, ctx) => {
@@ -82,10 +81,13 @@ export function SignupCard({
       </div>
 
       <FormSummary form={form} texts={texts} />
-
       <FormFields form={form} texts={texts} />
-
-      <SubmitButton className="w-full" form={form} label="Создать аккаунт" texts={texts} />
+      <SubmitButton
+        className="w-full"
+        form={form}
+        label="Создать аккаунт"
+        texts={texts}
+      />
     </FormShell>
   );
 }

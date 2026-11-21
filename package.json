@@ -19,7 +19,8 @@
     "release": "rw-scripts ensure-deploy-env && npm run clean && npm run build && wrangler deploy",
     "generate": "rw-scripts ensure-env && wrangler types --include-runtime false",
     "check": "npm run generate && npm run types",
-    "types": "tsc"
+    "types": "tsc",
+    "check:boundaries": "node scripts/check-boundaries.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

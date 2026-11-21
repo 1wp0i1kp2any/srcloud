@@ -2,9 +2,8 @@ import { requestInfo } from "rwsdk/worker";
 
 import type { Result } from "@/lib/form";
 
-import { AuthCard } from "@/app/components/auth-card";
-import { AuthModal } from "@/app/components/auth-modal";
-import { SignupCard } from "@/app/components/signup-card";
+import { AuthCard, AuthModal } from "@/features/auth";
+import { SignupCard } from "@/features/signup";
 
 export const Home = () => {
   // Результат серверного экшена кладёт SDK до рендера; для нативной

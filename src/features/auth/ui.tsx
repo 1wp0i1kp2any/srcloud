@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import type { Result } from "@/lib/form";
 import { createConfig, useForm } from "@/lib/form/react";
-import { auth } from "@/forms/auth";
 
-import { signIn } from "@/app/actions/auth";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   FormFields,
   FormShell,
@@ -14,12 +21,14 @@ import {
   SubmitButton,
   useFormSuccess,
   type FormSuccessAction,
-} from "@/app/components/form";
+} from "@/components/form";
+
+import { signIn } from "./actions";
+import { auth } from "./contract";
 
 /**
- * Одна форма входа для любого места: страница, модалка, вложенный экран.
- * Разметку строит общий рендерер, поэтому компонент не знает, где он
- * смонтирован, и не зависит от текущего URL.
+ * Форма входа: разметка из описания, серверное действие — из `./actions`.
+ * Где смонтирована — не знает; успех обрабатывает место подключения.
  */
 export function AuthCard({
   continuation = null,
@@ -27,15 +36,11 @@ export function AuthCard({
   onSuccess,
 }: {
   continuation?: Result | null;
-  /**
-   * Идентификатор экземпляра: два монтирования одной формы не должны делить
-   * результат. Место подключения решает, какой экземпляр перед ним.
-   */
+  /** Два монтирования одной формы не должны делить результат. */
   instance?: string;
   /** Что делать после подтверждённого входа: решает место подключения. */
   onSuccess?: FormSuccessAction;
 }) {
-  // Два экземпляра на одной странице не должны делить DOM-id и aria-связи.
   const uid = useId().replace(/:/g, "");
 
   const config = useMemo(
@@ -80,10 +85,33 @@ export function AuthCard({
       </div>
 
       <FormSummary form={form} texts={texts} />
-
       <FormFields form={form} texts={texts} />
-
       <SubmitButton className="w-full" form={form} label="Войти" texts={texts} />
     </FormShell>
+  );
+}
+
+/**
+ * Модальная точка подключения: тот же AuthCard, только закрытие диалога —
+ * её собственное решение об успехе.
+ */
+export function AuthModal() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button variant="outline" />}>
+        Вход в модалке
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Вход</DialogTitle>
+          <DialogDescription>
+            Тот же компонент формы, что и на странице.
+          </DialogDescription>
+        </DialogHeader>
+        <AuthCard instance="auth:modal" onSuccess={() => setOpen(false)} />
+      </DialogContent>
+    </Dialog>
   );
 }
