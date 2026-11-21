@@ -12,6 +12,7 @@ import {
   FormShell,
   FormSummary,
   SubmitButton,
+  useFormSuccess,
 } from "@/app/components/form";
 
 /**
@@ -21,8 +22,17 @@ import {
  */
 export function AuthCard({
   continuation = null,
+  instance = "auth:new",
+  onSuccess,
 }: {
   continuation?: Result | null;
+  /**
+   * Идентификатор экземпляра: два монтирования одной формы не должны делить
+   * результат. Место подключения решает, какой экземпляр перед ним.
+   */
+  instance?: string;
+  /** Что делать после подтверждённого входа: решает место подключения. */
+  onSuccess?: (result: Result) => void;
 }) {
   // Два экземпляра на одной странице не должны делить DOM-id и aria-связи.
   const uid = useId().replace(/:/g, "");
@@ -37,7 +47,7 @@ export function AuthCard({
   );
 
   const form = useForm(config, auth, {
-    instance: "auth:new",
+    instance,
     intercept: true,
     continuation,
     transport: async ({ data }) => ({
@@ -46,10 +56,9 @@ export function AuthCard({
     }),
   });
 
-  const texts = {
-    success: "Готово: сервер подтвердил вход.",
-    pending: "Входим…",
-  };
+  const texts = { pending: "Входим…" };
+
+  useFormSuccess(form, onSuccess);
 
   // Результат нативной отправки приезжает пропом: поднимаем один раз.
   useEffect(() => {

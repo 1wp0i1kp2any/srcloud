@@ -12,8 +12,8 @@ import { auth } from "@/forms/auth";
 
 import { plain } from "./plain";
 
-/** Тот же instance, что у `useForm` на клиенте: иначе continuation не поднимется. */
-const INSTANCE = "auth:new";
+/** Запасной экземпляр, если конверт не пришёл (нативная отправка без полей). */
+const DEFAULT_INSTANCE = "auth:new";
 
 const render = makeRenderer(
   [auth.messages as never, ru],
@@ -33,9 +33,16 @@ const DEMO_PASSWORD = "secret123";
 export async function signIn(
   formData: FormData,
 ): Promise<Result<{ email: string }>> {
+  // Экземпляр приходит из конверта: страница и модалка — разные экземпляры.
+  const rawInstance = formData.get(auth.policy.envelopeKeys.instance);
+  const instance =
+    typeof rawInstance === "string" && rawInstance.length > 0
+      ? rawInstance
+      : DEFAULT_INSTANCE;
+
   const evaluated = evaluate(formData, auth, {
     render,
-    instance: INSTANCE,
+    instance,
     requireEnvelope: false,
   });
 
@@ -50,7 +57,7 @@ export async function signIn(
   const submission = {
     v: 1 as const,
     formId: auth.id,
-    instance: INSTANCE,
+    instance,
     submissionId,
     revision: auth.revision,
     from: "action" as const,

@@ -7,11 +7,13 @@ import { createConfig, useForm } from "@/lib/form/react";
 import { signup } from "@/forms/signup";
 
 import { isEmailTaken, signUp } from "@/app/actions/signup";
+import { type Result } from "@/lib/form";
 import {
   FormFields,
   FormShell,
   FormSummary,
   SubmitButton,
+  useFormSuccess,
 } from "@/app/components/form";
 
 /**
@@ -19,7 +21,11 @@ import {
  * политике, асинхронная занятость почты с дебаунсом, межполевое правило,
  * условное поле и генерация атрибутов — всё из описания формы.
  */
-export function SignupCard() {
+export function SignupCard({
+  onSuccess,
+}: {
+  onSuccess?: (result: Result) => void;
+}) {
   const uid = useId().replace(/:/g, "");
 
   const config = useMemo(
@@ -52,6 +58,8 @@ export function SignupCard() {
       result: await signUp(data),
     }),
   });
+
+  useFormSuccess(form, onSuccess);
 
   const texts = {
     success: "Готово: сервер принял заявку.",

@@ -64,7 +64,7 @@ export function BasecnDemo() {
                     Это basecn Dialog на Base UI, без Radix.
                   </DialogDescription>
                 </DialogHeader>
-                <AuthCard />
+                <AuthCard instance="auth:modal" onSuccess={() => setOpen(false)} />
                 <DialogFooter>
                   <Button onClick={() => setOpen(false)}>Закрыть</Button>
                 </DialogFooter>

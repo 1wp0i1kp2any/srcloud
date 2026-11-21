@@ -1,8 +1,8 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
+import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
 
-import { visibleFields } from "@/lib/form";
+import { visibleFields, type Result } from "@/lib/form";
 import type { BoundForm, FieldView } from "@/lib/form/react";
 
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,26 @@ export interface FormTexts {
   success?: ReactNode;
   /** Подпись кнопки во время отправки. */
   pending?: ReactNode;
+}
+
+/**
+ * Успех обрабатывает место подключения: модалка закрывается, маршрут
+ * переходит. Рендерер только сообщает, что сервер подтвердил отправку.
+ */
+export function useFormSuccess(
+  form: BoundForm,
+  onSuccess?: (result: Result) => void,
+) {
+  const seen = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!onSuccess) return;
+    const result = form.state.result;
+    if (!result?.ok) return;
+    if (seen.current === result.submissionId) return;
+    seen.current = result.submissionId;
+    onSuccess(result);
+  }, [onSuccess, form.state.result?.ok, form.state.result?.submissionId]);
 }
 
 export function FormShell({
