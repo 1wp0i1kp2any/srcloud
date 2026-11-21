@@ -4,6 +4,9 @@ import { redwood } from "rwsdk/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 
 export default defineConfig({
+  server: {
+    allowedHosts: ["preview.opencode.pzlb.ru"],
+  },
   resolve: {
     alias: {
       "@": new URL("./src", import.meta.url).pathname,
