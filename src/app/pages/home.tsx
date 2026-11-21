@@ -3,7 +3,7 @@ import { requestInfo } from "rwsdk/worker";
 import type { Result } from "@/lib/form";
 
 import { AuthCard } from "@/app/components/auth-card";
-import { BasecnDemo } from "@/app/components/basecn-demo";
+import { AuthModal } from "@/app/components/auth-modal";
 import { SignupCard } from "@/app/components/signup-card";
 
 export const Home = () => {
@@ -20,7 +20,7 @@ export const Home = () => {
         onSuccess={{ redirect: "/welcome" }}
       />
       <SignupCard />
-      <BasecnDemo />
+      <AuthModal />
     </main>
   );
 };
