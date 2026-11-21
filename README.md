@@ -28,6 +28,9 @@ npm run build
 npm run preview -- --host 0.0.0.0 --port 3000
 ```
 
+`vite preview` запоминает сборку при старте: после каждого `npm run build`
+процесс preview нужно перезапустить, иначе ассеты отдают 500.
+
 ## Особенность Alpine/musl
 
 `workerd` собран под glibc и в Alpine не запускается. Обход — обёртка вместо
