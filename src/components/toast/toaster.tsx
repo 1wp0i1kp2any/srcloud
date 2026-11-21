@@ -1,15 +1,12 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
-import { toast as sonner, Toaster as Sonner, type ExternalToast } from "sonner";
+import { Toaster as Sonner, toast as sonner } from "sonner";
 
-import {
-  MOBILE_QUERY,
-  getToastConfig,
-  presetForViewport,
-  subscribeToasts,
-} from "./config";
+import { getToastConfig, setToastSink, subscribeToasts } from "@/lib/toast";
+
+const MOBILE_QUERY = "(max-width: 640px)";
 
 function subscribeViewport(listener: () => void): () => void {
   const media = window.matchMedia(MOBILE_QUERY);
@@ -22,7 +19,10 @@ function subscribeViewport(listener: () => void): () => void {
 const isMobile = () => window.matchMedia(MOBILE_QUERY).matches;
 const isMobileOnServer = () => false;
 
-/** Контейнер уведомлений: позиция и лимит зависят от экрана. */
+/**
+ * Адаптер sonner: единственное место, где ядро уведомлений встречается с
+ * рендерером. Настройки читает из точки доступа и обновляет на лету.
+ */
 export function Toaster() {
   const config = useSyncExternalStore(
     subscribeToasts,
@@ -34,6 +34,20 @@ export function Toaster() {
     isMobile,
     isMobileOnServer,
   );
+
+  useEffect(() => {
+    setToastSink((kind, input, preset) => {
+      sonner[kind](input.message, {
+        description: input.description,
+        duration: input.duration ?? preset.duration,
+        id: input.id,
+      });
+    });
+    return () => {
+      setToastSink(undefined);
+    };
+  }, []);
+
   const preset = mobile ? config.mobile : config.desktop;
 
   return (
@@ -47,25 +61,3 @@ export function Toaster() {
     />
   );
 }
-
-type NotifyKind = "success" | "error" | "info" | "warning" | "message";
-
-function emit(kind: NotifyKind, message: string, options?: ExternalToast): void {
-  if (!getToastConfig().enabled) return;
-  const preset = presetForViewport();
-  sonner[kind](message, { duration: preset.duration, ...options });
-}
-
-/** Единственная точка вызова уведомлений в приложении. */
-export const notify = {
-  success: (message: string, options?: ExternalToast) =>
-    emit("success", message, options),
-  error: (message: string, options?: ExternalToast) =>
-    emit("error", message, options),
-  info: (message: string, options?: ExternalToast) =>
-    emit("info", message, options),
-  warning: (message: string, options?: ExternalToast) =>
-    emit("warning", message, options),
-  message: (message: string, options?: ExternalToast) =>
-    emit("message", message, options),
-};

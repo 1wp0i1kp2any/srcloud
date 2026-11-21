@@ -1,10 +1,20 @@
 "use client";
 
-export { Toaster, notify } from "./toaster";
+export { Toaster } from "./toaster";
+
 export {
   configureToasts,
+  currentToastPreset,
   getToastConfig,
+  notify,
+  setToastSink,
+  setToastViewport,
+  subscribeToasts,
+  toast,
   type ToastConfig,
+  type ToastInput,
+  type ToastKind,
   type ToastPosition,
   type ToastPreset,
-} from "./config";
+  type ToastSink,
+} from "@/lib/toast";
