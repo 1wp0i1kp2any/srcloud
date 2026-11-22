@@ -18,22 +18,32 @@ describe("Surface", () => {
       createElement(
         "div",
         null,
-        createElement(Surface, { continuation: result("left") }, createElement(Probe)),
-        createElement(Surface, { continuation: result("right") }, createElement(Probe)),
+        createElement(Surface, {
+          continuation: result("left"),
+          children: createElement(Probe),
+        }),
+        createElement(Surface, {
+          continuation: result("right"),
+          children: createElement(Probe),
+        }),
         createElement(Probe),
       ),
     );
 
-    expect(html).toBe("<div><div><span>left</span></div><div><span>right</span></div><span>none</span></div>");
+    expect(html).toBe(
+      "<div><div><span>left</span></div><div><span>right</span></div><span>none</span></div>",
+    );
   });
 
   it("ближайший Surface важнее внешнего", () => {
     const html = renderToStaticMarkup(
-      createElement(
-        Surface,
-        { continuation: result("outer") },
-        createElement(Surface, { continuation: result("inner") }, createElement(Probe)),
-      ),
+      createElement(Surface, {
+        continuation: result("outer"),
+        children: createElement(Surface, {
+          continuation: result("inner"),
+          children: createElement(Probe),
+        }),
+      }),
     );
 
     expect(html).toBe("<div><div><span>inner</span></div></div>");
@@ -41,11 +51,18 @@ describe("Surface", () => {
 
   it("явный результат у формы важнее контекста", () => {
     function Explicit() {
-      return createElement("span", null, useSurfaceContinuation(result("explicit"))?.formId);
+      return createElement(
+        "span",
+        null,
+        useSurfaceContinuation(result("explicit"))?.formId,
+      );
     }
 
     const html = renderToStaticMarkup(
-      createElement(Surface, { continuation: result("context") }, createElement(Explicit)),
+      createElement(Surface, {
+        continuation: result("context"),
+        children: createElement(Explicit),
+      }),
     );
 
     expect(html).toBe("<div><span>explicit</span></div>");
