@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
-
 import { Toaster } from "@/components/ui/sonner";
 
-import CollapsingHeader, { type HeaderRows } from "./collapsing-header";
+import { useIsMobile } from "@/lib/use-is-mobile";
+
+import CollapsingHeader, {
+  rowHasSlots,
+  type HeaderRows,
+} from "./collapsing-header";
 
 export interface SidebarSlots {
   top?: ReactNode[];
@@ -32,12 +35,18 @@ export function AppShell({
 }) {
   const toggleRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
+  const mobile = useIsMobile();
 
   const hasSidebar =
     (sidebar.top?.length ?? 0) +
       (sidebar.middle?.length ?? 0) +
       (sidebar.bottom?.length ?? 0) >
     0;
+
+  // Верхний ряд шапки нужен только ради кнопки меню: если слотов страницы в
+  // нём нет, на широком экране ряд скрывается стилями, чтобы не оставлять
+  // пустую полосу над заголовком.
+  const menuRowOnly = hasSidebar && !rowHasSlots(header.top);
 
   useEffect(() => {
     const toggle = toggleRef.current;
@@ -80,8 +89,9 @@ export function AppShell({
   }, []);
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-clip bg-background text-foreground">
+    <div className="app-shell flex h-screen w-full flex-col overflow-clip bg-background text-foreground">
       <CollapsingHeader
+        className={menuRowOnly ? "app-header-menu-only" : undefined}
         leading={(row) =>
           row === "top" && hasSidebar ? (
             <label
@@ -110,7 +120,8 @@ export function AppShell({
       />
 
       <div className="relative flex min-h-0 flex-1">
-        {/* Скрытый checkbox — peer для панели и подложки: drawer работает без JS. */}
+        {/* Скрытый checkbox — состояние drawer'а: панель и подложка читают его
+            через :has() у корня оболочки, поэтому всё работает и без JS. */}
         <input
           ref={toggleRef}
           aria-hidden="true"
@@ -123,17 +134,14 @@ export function AppShell({
         {hasSidebar && (
           <label
             aria-label="Закрыть подложку"
-            className="fixed inset-0 z-30 hidden bg-foreground/45 peer-checked/sidebar:block lg:hidden"
+            className="app-backdrop fixed inset-0 z-30 bg-foreground/45"
             htmlFor={SIDEBAR_ID}
           />
         )}
 
         {hasSidebar && (
           <aside
-            className={cn(
-              "flex w-[260px] shrink-0 flex-col border-r border-border/70 bg-background",
-              "max-lg:fixed max-lg:inset-y-0 max-lg:z-40 max-lg:hidden max-lg:peer-checked/sidebar:flex",
-            )}
+            className="app-sidebar flex w-[260px] shrink-0 flex-col border-r border-border/70 bg-background"
             id={`${SIDEBAR_ID}-panel`}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-4 py-3 lg:hidden">
@@ -185,7 +193,11 @@ export function AppShell({
         </main>
       </div>
 
-      <Toaster closeButton position="bottom-right" richColors />
+      <Toaster
+        closeButton
+        position={mobile ? "top-center" : "bottom-right"}
+        richColors
+      />
     </div>
   );
 }

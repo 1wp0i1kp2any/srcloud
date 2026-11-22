@@ -135,3 +135,56 @@
     @apply font-sans;
     }
 }
+
+/* ---------- Каркас: drawer сайдбара без JS (checkbox + CSS) ---------- */
+/* Панель всегда в DOM. На узком экране она уезжает за край и возвращается
+   transition'ом; состояние несёт скрытый checkbox, а «открыто» читается
+   через :has() у корня оболочки — поэтому работает и до гидрации.
+   visibility с задержкой убирает закрытую панель из обхода табом. */
+@media (max-width: 1023px) {
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    translate: -100% 0;
+    visibility: hidden;
+    transition:
+      translate 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s linear 0.3s;
+    box-shadow: 0 10px 40px -10px
+      color-mix(in oklab, var(--foreground) 35%, transparent);
+  }
+
+  .app-shell:has(#app-sidebar:checked) .app-sidebar {
+    translate: 0 0;
+    visibility: visible;
+    transition:
+      translate 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s;
+  }
+
+  .app-backdrop {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .app-shell:has(#app-sidebar:checked) .app-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-backdrop {
+    display: none;
+  }
+
+  /* Верхний ряд шапки может существовать только ради кнопки меню: если в нём
+     нет слотов страницы, на широком экране он не должен оставлять пустую полосу. */
+  header.app-header-menu-only > [data-slot="top"] {
+    display: none;
+  }
+}
