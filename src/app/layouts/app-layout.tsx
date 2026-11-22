@@ -1,25 +1,30 @@
-"use client";
-
 import type { LayoutProps } from "rwsdk/router";
+import { requestInfo as currentRequest } from "rwsdk/worker";
 
-import { Toaster } from "@/components/ui/sonner";
-import { useIsMobile } from "@/lib/use-is-mobile";
+import type { Result } from "@/lib/form";
+
+import { AppShell } from "@/components/shell/app-shell";
+import { Surface } from "@/components/surface";
+
+import { pageHeader, pageSidebar } from "@/app/page-config";
 
 /**
- * Общий каркас страниц. Тостер монтируется здесь: Document рендерится вне
- * клиентского дерева и не гидрируется. Позиция — по единому правилу «мобильный».
+ * Шаблон сайта: шапка и сайдбар из конфига страницы, контент — в Surface,
+ * чтобы формы получили результат нативного POST.
  */
-export function AppLayout({ children }: LayoutProps) {
-  const mobile = useIsMobile();
+export function AppLayout({ children, requestInfo }: LayoutProps) {
+  const info = requestInfo ?? currentRequest;
+  const continuation = (info.rw.actionResult as Result | undefined) ?? null;
+  const path = info.path;
 
   return (
-    <>
-      {children}
-      <Toaster
-        closeButton
-        position={mobile ? "top-center" : "bottom-right"}
-        richColors
-      />
-    </>
+    <AppShell header={pageHeader(path)} sidebar={pageSidebar(path)}>
+      <Surface
+        className="mx-auto flex w-full max-w-4xl flex-col gap-10 p-8"
+        continuation={continuation}
+      >
+        {children}
+      </Surface>
+    </AppShell>
   );
 }
