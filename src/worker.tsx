@@ -8,7 +8,6 @@ import { setCommonHeaders } from "@/app/headers";
 import { AppLayout } from "@/app/layouts/app-layout";
 import { Home } from "@/app/pages/home";
 import { Welcome } from "@/app/pages/welcome";
-import { homeRoute, welcomeRoute } from "@/app/routes";
 import { cors } from "@/server/cors";
 import { formAction } from "@/server/form-action";
 
@@ -24,10 +23,7 @@ export default defineApp(
       ctx;
     },
     render(Document, [
-      layout(AppLayout, [
-        route(homeRoute.path, Home),
-        route(welcomeRoute.path, Welcome),
-      ]),
+      layout(AppLayout, [route("/", Home), route("/welcome", Welcome)]),
     ]),
   ],
   { allowedOrigins: config.appOrigins },
